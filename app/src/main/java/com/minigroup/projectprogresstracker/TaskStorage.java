@@ -1,0 +1,176 @@
+package com.minigroup.projectprogresstracker;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Map;
+
+public class TaskStorage {
+
+    private static final String PREF = "TaskPrefs";
+    private static final String KEY = "tasks";
+
+    // New Preference for group-specific completion states
+    private static final String PREF_GROUP_STATUS = "GroupTaskStatusPrefs";
+
+    /**
+     * Retrieves EVERY task stored in the app using the TaskModel.
+     */
+    public static ArrayList<TaskModel> getAllTasks(Context context) {
+        if (context == null) return new ArrayList<>();
+
+        SharedPreferences prefs = context.getSharedPreferences(PREF, Context.MODE_PRIVATE);
+        String json = prefs.getString(KEY, null);
+
+        if (json == null || json.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            Type type = new TypeToken<ArrayList<TaskModel>>() {}.getType();
+            ArrayList<TaskModel> list = new Gson().fromJson(json, type);
+            return list != null ? list : new ArrayList<>();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Saves the full master list of tasks.
+     */
+    public static void saveAllTasks(Context context, ArrayList<TaskModel> list) {
+        if (context == null || list == null) return;
+
+        SharedPreferences prefs = context.getSharedPreferences(PREF, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        Gson gson = new Gson();
+        editor.putString(KEY, gson.toJson(list));
+        editor.apply();
+    }
+
+    /**
+     * Updates a specific group's completion status for a task.
+     * Logic: Saves a boolean using a unique key: taskId + groupId
+     */
+    public static void updateGroupTaskStatus(Context context, String taskId, String groupId, boolean isCompleted) {
+        if (context == null || taskId == null || groupId == null) return;
+
+        SharedPreferences prefs = context.getSharedPreferences(PREF_GROUP_STATUS, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        String uniqueKey = taskId + "_" + groupId;
+        editor.putBoolean(uniqueKey, isCompleted);
+        editor.apply();
+    }
+
+    /**
+     * Checks if a specific task is completed for a specific group.
+     */
+    public static boolean isTaskCompletedForGroup(Context context, String taskId, String groupId) {
+        if (context == null || taskId == null || groupId == null) return false;
+
+        SharedPreferences prefs = context.getSharedPreferences(PREF_GROUP_STATUS, Context.MODE_PRIVATE);
+        String uniqueKey = taskId + "_" + groupId;
+        return prefs.getBoolean(uniqueKey, false);
+    }
+
+    /**
+     * Updates a specific task in the master list.
+     */
+    public static void updateTask(Context context, TaskModel updatedTask) {
+        if (context == null || updatedTask == null) return;
+
+        ArrayList<TaskModel> allTasks = getAllTasks(context);
+        for (int i = 0; i < allTasks.size(); i++) {
+            if (allTasks.get(i).getTaskId().equals(updatedTask.getTaskId())) {
+                allTasks.set(i, updatedTask);
+                break;
+            }
+        }
+        saveAllTasks(context, allTasks);
+    }
+
+    /**
+     * Adds a new task to the start of the master list.
+     */
+    public static void addTask(Context context, TaskModel task) {
+        if (context == null || task == null) return;
+
+        ArrayList<TaskModel> list = getAllTasks(context);
+        list.add(0, task); // Latest first
+        saveAllTasks(context, list);
+    }
+
+    /**
+     * Method used by HomeFragment.java
+     */
+    public static ArrayList<TaskModel> getTasks(Context context, String classCode) {
+        return getClassTasks(context, classCode);
+    }
+
+    /**
+     * Filters tasks by classCode.
+     */
+    public static ArrayList<TaskModel> getClassTasks(Context context, String classCode) {
+        ArrayList<TaskModel> filtered = new ArrayList<>();
+        if (context == null || classCode == null) return filtered;
+
+        ArrayList<TaskModel> allTasks = getAllTasks(context);
+
+        for (TaskModel t : allTasks) {
+            if (t != null && t.getClassCode() != null && t.getClassCode().equalsIgnoreCase(classCode)) {
+                filtered.add(t);
+            }
+        }
+        return filtered;
+    }
+
+    /**
+     * Deletes a specific task by ID and cleans up group status records.
+     * Renamed to removeTask to match AdminDashboardActivity.
+     */
+    public static void removeTask(Context context, String taskId) {
+        if (context == null || taskId == null) return;
+
+        // 1. Remove from master list
+        ArrayList<TaskModel> allTasks = getAllTasks(context);
+        ArrayList<TaskModel> updatedList = new ArrayList<>();
+
+        for (TaskModel t : allTasks) {
+            if (t.getTaskId() != null && !t.getTaskId().equals(taskId)) {
+                updatedList.add(t);
+            }
+        }
+        saveAllTasks(context, updatedList);
+
+        // 2. Clean up completion records for all groups for this task
+        SharedPreferences groupPrefs = context.getSharedPreferences(PREF_GROUP_STATUS, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = groupPrefs.edit();
+        Map<String, ?> allEntries = groupPrefs.getAll();
+
+        for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
+            if (entry.getKey().startsWith(taskId + "_")) {
+                editor.remove(entry.getKey());
+            }
+        }
+        editor.apply();
+    }
+
+    /**
+     * Alternative delete method by position.
+     */
+    public static void deleteTask(Context context, int position) {
+        ArrayList<TaskModel> allTasks = getAllTasks(context);
+        if (position >= 0 && position < allTasks.size()) {
+            String taskId = allTasks.get(position).getTaskId();
+            removeTask(context, taskId);
+        }
+    }
+}
