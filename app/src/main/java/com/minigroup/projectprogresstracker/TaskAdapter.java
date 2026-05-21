@@ -10,16 +10,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import java.util.ArrayList;
 
-public class TaskAdapter extends ArrayAdapter<TaskModel> {
+public class TaskAdapter extends ArrayAdapter<Task> {
 
-    public TaskAdapter(Context context, ArrayList<TaskModel> tasks) {
+    public TaskAdapter(Context context, ArrayList<Task> tasks) {
         super(context, 0, tasks);
     }
 
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        TaskModel task = getItem(position);
+        Task task = getItem(position);
 
         if (convertView == null) {
             // Inflating the layout using the exact XML structure you provided

@@ -62,26 +62,7 @@ public class AnnouncementStorage {
     }
 
     /**
-     * Removes a specific announcement from the storage.
-     */
-    public static void removeAnnouncement(Context context, String classCode, Announcement announcementToRemove) {
-        if (context == null || classCode == null || announcementToRemove == null) return;
-
-        ArrayList<Announcement> list = getClassAnnouncements(context, classCode);
-
-        // Find and remove based on content/timestamp equality
-        for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).getMessage().equals(announcementToRemove.getMessage())) {
-                list.remove(i);
-                break;
-            }
-        }
-
-        saveAnnouncements(context, classCode, list);
-    }
-
-    /**
-     * Deletes an announcement by its position in the list.
+     * Optional: Deletes an announcement by its title/content or ID if needed.
      */
     public static void deleteAnnouncement(Context context, String classCode, int position) {
         ArrayList<Announcement> list = getClassAnnouncements(context, classCode);

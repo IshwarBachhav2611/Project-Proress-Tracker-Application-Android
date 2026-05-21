@@ -6,9 +6,11 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.minigroup.projectprogresstracker.data.local.AppRepository;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.List;
 
 public class UserStorage {
 
@@ -28,6 +30,19 @@ public class UserStorage {
 
     // 🔹 Get all users
     public static ArrayList<User> getUsers(Context context) {
+        // Try to get from SQLite first
+        try {
+            AppRepository repository = new AppRepository(context);
+            List<User> sqliteUsers = repository.getAllUsers();
+            if (sqliteUsers != null && !sqliteUsers.isEmpty()) {
+                Log.d("UserStorage", "Loaded " + sqliteUsers.size() + " users from SQLite");
+                return new ArrayList<>(sqliteUsers);
+            }
+        } catch (Exception e) {
+            Log.e("UserStorage", "Error loading from SQLite, falling back to SharedPreferences", e);
+        }
+
+        // Fallback to SharedPreferences
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String json = prefs.getString(KEY_USERS, null);
         if (json == null || json.isEmpty()) {
@@ -58,6 +73,12 @@ public class UserStorage {
 
     // 🔹 Add new user
     public static void addUser(Context context, User user) {
+        // Insert into SQLite
+        AppRepository repository = new AppRepository(context);
+        boolean sqliteSuccess = repository.insertUser(user);
+        Log.d("UserStorage", "SQLite insert user: " + user.getEmail() + " - " + (sqliteSuccess ? "SUCCESS" : "FAILED"));
+
+        // Also save to SharedPreferences for backward compatibility
         ArrayList<User> users = getUsers(context);
         if (users == null) users = new ArrayList<>();
         users.add(user);
