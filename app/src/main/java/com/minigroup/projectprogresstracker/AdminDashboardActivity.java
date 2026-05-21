@@ -1,6 +1,5 @@
 package com.minigroup.projectprogresstracker;
 
-import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.content.ClipData;
@@ -249,6 +248,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
                     guide.setText(guideName);
                     email.setText(g.getGuideEmail() != null ? g.getGuideEmail() : "");
 
+                    // Calculate real-time progress based on task storage
                     ArrayList<TaskModel> classTasks = TaskStorage.getClassTasks(AdminDashboardActivity.this, classCode);
                     int completed = 0;
                     for (TaskModel t : classTasks) {
@@ -304,6 +304,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
         LinearLayout memberContainer = dialog.findViewById(R.id.memberContainer);
         LinearLayout taskContainer = dialog.findViewById(R.id.taskContainer);
 
+        // Real-time calculation for analysis
         ArrayList<TaskModel> classTasks = TaskStorage.getClassTasks(this, classCode);
         int completedCount = 0;
         for (TaskModel t : classTasks) {
@@ -548,11 +549,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
         Button sendBtn = dialog.findViewById(R.id.sendAnnouncementBtn);
         ListView listView = dialog.findViewById(R.id.announcementList);
 
-        View btnClose = dialog.findViewById(R.id.btnCloseAnnouncements);
-        if (btnClose != null) {
-            btnClose.setOnClickListener(v -> dialog.dismiss());
-        }
-
         ArrayList<Announcement> list = AnnouncementStorage.getClassAnnouncements(this, classCode);
 
         BaseAdapter adapter = new BaseAdapter() {
@@ -594,21 +590,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
         };
 
         listView.setAdapter(adapter);
-
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            new AlertDialog.Builder(this)
-                    .setTitle("Delete Announcement")
-                    .setMessage("Are you sure you want to delete this announcement?")
-                    .setPositiveButton("Delete", (dialogInterface, which) -> {
-                        Announcement a = list.get(position);
-                        AnnouncementStorage.removeAnnouncement(this, classCode, a);
-                        list.remove(position);
-                        adapter.notifyDataSetChanged();
-                        Toast.makeText(this, "Announcement Deleted", Toast.LENGTH_SHORT).show();
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        });
 
         sendBtn.setOnClickListener(v -> {
             String msg = input.getText().toString().trim();
@@ -669,25 +650,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
             }
         };
 
-        if (listView != null) {
-            listView.setAdapter(adapter);
-
-            // ✅ Added: Delete Task on Item Click
-            listView.setOnItemClickListener((parent, view, position, id) -> {
-                new AlertDialog.Builder(this)
-                        .setTitle("Delete Task")
-                        .setMessage("Are you sure you want to delete this task? This will also remove completion records for all groups.")
-                        .setPositiveButton("Delete", (dialogInterface, which) -> {
-                            TaskModel taskToDelete = tasks.get(position);
-                            TaskStorage.removeTask(this, taskToDelete.getTaskId());
-                            tasks.remove(position);
-                            adapter.notifyDataSetChanged();
-                            Toast.makeText(this, "Task Deleted", Toast.LENGTH_SHORT).show();
-                        })
-                        .setNegativeButton("Cancel", null)
-                        .show();
-            });
-        }
+        if (listView != null) listView.setAdapter(adapter);
 
         if (btn != null) {
             btn.setOnClickListener(v -> {

@@ -7,9 +7,11 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.minigroup.projectprogresstracker.data.local.AppRepository;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class GroupStorage {
@@ -42,6 +44,19 @@ public class GroupStorage {
     public static ArrayList<Group> getGroupsByClass(Context context, String classCode) {
         if (classCode == null || context == null) return new ArrayList<>();
 
+        // Try to get from SQLite first
+        try {
+            AppRepository repository = new AppRepository(context);
+            List<Group> sqliteGroups = repository.getGroupsByClass(classCode);
+            if (sqliteGroups != null && !sqliteGroups.isEmpty()) {
+                Log.d(TAG, "Loaded " + sqliteGroups.size() + " groups from SQLite for class: " + classCode);
+                return new ArrayList<>(sqliteGroups);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading groups from SQLite, falling back to SharedPreferences", e);
+        }
+
+        // Fallback to SharedPreferences
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String key = formatKey(classCode);
         String json = prefs.getString(key, null);
@@ -126,6 +141,12 @@ public class GroupStorage {
     public static void saveGroup(Context context, String classCode, Group group) {
         if (group == null || group.getGroupId() == null || classCode == null || context == null) return;
 
+        // Insert/Update into SQLite
+        AppRepository repository = new AppRepository(context);
+        boolean sqliteSuccess = repository.insertGroup(group);
+        Log.d(TAG, "SQLite insert/update group: " + group.getGroupId() + " - " + (sqliteSuccess ? "SUCCESS" : "FAILED"));
+
+        // Also save to SharedPreferences for backward compatibility
         ArrayList<Group> groups = getGroupsByClass(context, classCode);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

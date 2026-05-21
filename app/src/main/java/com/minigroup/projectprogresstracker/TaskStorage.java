@@ -2,13 +2,15 @@ package com.minigroup.projectprogresstracker;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.minigroup.projectprogresstracker.data.local.AppRepository;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.List;
 
 public class TaskStorage {
 
@@ -24,6 +26,19 @@ public class TaskStorage {
     public static ArrayList<TaskModel> getAllTasks(Context context) {
         if (context == null) return new ArrayList<>();
 
+        // Try to get from SQLite first
+        try {
+            AppRepository repository = new AppRepository(context);
+            List<TaskModel> sqliteTasks = repository.getAllTasks();
+            if (sqliteTasks != null && !sqliteTasks.isEmpty()) {
+                Log.d("TaskStorage", "Loaded " + sqliteTasks.size() + " tasks from SQLite");
+                return new ArrayList<>(sqliteTasks);
+            }
+        } catch (Exception e) {
+            Log.e("TaskStorage", "Error loading tasks from SQLite, falling back to SharedPreferences", e);
+        }
+
+        // Fallback to SharedPreferences
         SharedPreferences prefs = context.getSharedPreferences(PREF, Context.MODE_PRIVATE);
         String json = prefs.getString(KEY, null);
 
@@ -103,6 +118,12 @@ public class TaskStorage {
     public static void addTask(Context context, TaskModel task) {
         if (context == null || task == null) return;
 
+        // Insert into SQLite
+        AppRepository repository = new AppRepository(context);
+        boolean sqliteSuccess = repository.insertTask(task);
+        Log.d("TaskStorage", "SQLite insert task: " + task.getTaskId() + " - " + (sqliteSuccess ? "SUCCESS" : "FAILED"));
+
+        // Also save to SharedPreferences for backward compatibility
         ArrayList<TaskModel> list = getAllTasks(context);
         list.add(0, task); // Latest first
         saveAllTasks(context, list);
@@ -133,13 +154,11 @@ public class TaskStorage {
     }
 
     /**
-     * Deletes a specific task by ID and cleans up group status records.
-     * Renamed to removeTask to match AdminDashboardActivity.
+     * Deletes a specific task by ID.
      */
-    public static void removeTask(Context context, String taskId) {
+    public static void deleteTask(Context context, String taskId) {
         if (context == null || taskId == null) return;
 
-        // 1. Remove from master list
         ArrayList<TaskModel> allTasks = getAllTasks(context);
         ArrayList<TaskModel> updatedList = new ArrayList<>();
 
@@ -149,28 +168,5 @@ public class TaskStorage {
             }
         }
         saveAllTasks(context, updatedList);
-
-        // 2. Clean up completion records for all groups for this task
-        SharedPreferences groupPrefs = context.getSharedPreferences(PREF_GROUP_STATUS, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = groupPrefs.edit();
-        Map<String, ?> allEntries = groupPrefs.getAll();
-
-        for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
-            if (entry.getKey().startsWith(taskId + "_")) {
-                editor.remove(entry.getKey());
-            }
-        }
-        editor.apply();
-    }
-
-    /**
-     * Alternative delete method by position.
-     */
-    public static void deleteTask(Context context, int position) {
-        ArrayList<TaskModel> allTasks = getAllTasks(context);
-        if (position >= 0 && position < allTasks.size()) {
-            String taskId = allTasks.get(position).getTaskId();
-            removeTask(context, taskId);
-        }
     }
 }

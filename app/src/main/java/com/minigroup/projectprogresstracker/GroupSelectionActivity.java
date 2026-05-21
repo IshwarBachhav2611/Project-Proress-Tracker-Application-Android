@@ -120,14 +120,8 @@ public class GroupSelectionActivity extends AppCompatActivity {
         title.setText(isTeacher ? "Select Faculty Guide" : "Select Team Members");
 
         LinearLayout list = picker.findViewById(R.id.listContainer);
-
-        // ✅ Updated: Filtering teachers by the current user's class code
-        ArrayList<User> users;
-        if (isTeacher) {
-            users = getTeachersByClass(user.getClassCode());
-        } else {
-            users = UserStorage.getAvailableStudents(this, user.getClassCode());
-        }
+        ArrayList<User> users = isTeacher ? UserStorage.getUsersByRole(this, "Teacher")
+                : UserStorage.getAvailableStudents(this, user.getClassCode());
 
         for (User u : users) {
             if (!isTeacher && u.getEmail().equalsIgnoreCase(user.getEmail())) continue;
@@ -173,18 +167,6 @@ public class GroupSelectionActivity extends AppCompatActivity {
         });
 
         picker.show();
-    }
-
-    // ✅ Helper method to filter teachers by class code
-    private ArrayList<User> getTeachersByClass(String classCode) {
-        ArrayList<User> allTeachers = UserStorage.getUsersByRole(this, "Teacher");
-        ArrayList<User> filteredTeachers = new ArrayList<>();
-        for (User t : allTeachers) {
-            if (t.getClassCode() != null && t.getClassCode().equalsIgnoreCase(classCode)) {
-                filteredTeachers.add(t);
-            }
-        }
-        return filteredTeachers;
     }
 
     private void setupRowData(View row, String name, String email, boolean isTeacher) {
