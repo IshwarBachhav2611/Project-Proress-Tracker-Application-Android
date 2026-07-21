@@ -185,23 +185,6 @@ No internet connection is required for core functionality.
 
 ---
 
-## 📸 Screenshots
-
-Add screenshots of the application here.
-
-Example:
-
-```
-screenshots/
-    splash.png
-    login.png
-    admin_dashboard.png
-    teacher_dashboard.png
-    student_dashboard.png
-```
-
----
-
 ## 🔮 Future Enhancements
 
 - Firebase Authentication
