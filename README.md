@@ -227,6 +227,15 @@ This project is developed for **educational and learning purposes**.
 
 ---
 
+## 📥 Download
+
+Download the latest APK from the **Releases** section.
+
+https://github.com/<your-username>/ProjectProgressTracker/releases/latest
+
+---
+
 ## ⭐ Support
 
 If you found this project helpful, consider giving it a **⭐ Star** on GitHub.
+
