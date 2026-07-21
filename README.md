@@ -231,7 +231,7 @@ This project is developed for **educational and learning purposes**.
 
 Download the latest APK from the **Releases** section.
 
-https://github.com/<your-username>/ProjectProgressTracker/releases/latest
+https://github.com/<your-username>/Project-Progress-Tracker-Application-Android/releases/latest
 
 ---
 
